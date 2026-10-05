@@ -1,0 +1,73 @@
+const { _electron: electron } = require('playwright');
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const os = require('node:os');
+(async () => {
+  const root = path.resolve(__dirname, '..'), temp = await fs.mkdtemp(path.join(os.tmpdir(), 'moye-rich-'));
+  const target = path.join(temp, '直观编辑.md'); let app;
+  try {
+    const env = { ...process.env, MOYE_TEST_PROFILE: path.join(temp, 'profile') }; delete env.ELECTRON_RUN_AS_NODE;
+    const packaged = process.argv.includes('--packaged');
+    app = await electron.launch({ executablePath: packaged ? path.join(root, require('../package.json').build.directories.output, 'win-unpacked/成简.exe') : require('electron'), args: packaged ? [] : [root], env });
+    const page = await app.firstWindow(); page.setDefaultTimeout(12000); const errors = []; page.on('pageerror', e => errors.push(e.message));
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].showInactive());
+    await page.waitForSelector('.tiptap'); await page.locator('#autoSave').uncheck();
+    assert.equal(await page.locator('#editor textarea').count(), 0);
+    await page.locator('#newBtn').click();
+    const doc = page.locator('.tiptap');
+    await doc.click(); await page.keyboard.insertText('今天的计划'); await doc.press('Control+a'); await page.locator('[data-command="bold"]').click();
+    assert.equal(await doc.locator('strong').textContent(), '今天的计划');
+    await doc.press('ArrowRight'); await doc.press('Enter');
+    assert.ok(await doc.locator('p').count() >= 2, await doc.innerHTML());
+    await page.keyboard.type('表格可以直接填写。'); await doc.press('Enter');
+    await page.locator('#tableBtn').click(); await page.locator('#tableRows').fill('3'); await page.locator('#tableCols').fill('2'); await page.locator('#insertTable').click();
+    assert.equal(await doc.locator('tr').count(), 3); assert.equal(await doc.locator('th').count(), 2);
+    await doc.locator('th').first().click(); await page.keyboard.type('事项'); await page.keyboard.press('Tab'); await page.keyboard.type('进度'); await page.keyboard.press('Tab'); await page.keyboard.type('整理图片');
+    await page.locator('[data-table="addRowAfter"]').click(); assert.equal(await doc.locator('tr').count(), 4);
+    await page.locator('[data-table="addColumnAfter"]').click(); assert.equal(await doc.locator('tr').first().locator('th,td').count(), 3);
+    await page.locator('[data-table="deleteColumn"]').click(); assert.equal(await doc.locator('tr').first().locator('th,td').count(), 2);
+    await doc.locator('th').first().click(); await page.keyboard.type('事项');
+    const cell = await doc.locator('th').first().boundingBox();
+    await page.mouse.move(cell.x + cell.width - 1, cell.y + cell.height / 2); await page.mouse.down(); await page.mouse.move(cell.x + cell.width + 45, cell.y + cell.height / 2); await page.mouse.up();
+    const columnWidth = await doc.locator('th').first().getAttribute('colwidth');
+    assert.ok(Number(columnWidth) > 0, 'Column resizing must update the document');
+    await doc.press('Control+End'); await doc.press('ArrowDown');
+    await app.evaluate(({ dialog }, args) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [args.image] }); dialog.showSaveDialog = async () => ({ canceled: false, filePath: args.target }); }, { image: path.join(root, 'assets/mountains.svg'), target });
+    await page.locator('#imageBtn').click(); await page.waitForFunction(() => document.querySelector('.tiptap .rich-image img')?.naturalWidth === 1200);
+    await doc.locator('img').first().click(); await page.locator('#imageWidth').fill('350'); await page.locator('#imageWidth').press('Enter');
+    await page.waitForFunction(() => document.querySelector('.tiptap .rich-image img').style.width === '350px');
+    await page.locator('#saveBtn').click(); await page.waitForFunction(() => document.querySelector('#saveState').textContent === '已保存');
+    let text = await fs.readFile(target, 'utf8'); assert.ok(text.includes('**今天的计划**'), text); assert.ok(text.includes('<table')); assert.ok(text.includes('事项')); assert.ok(text.includes('width="350"')); assert.ok(text.includes('直观编辑.assets/')); assert.ok(!text.includes('file:///'));
+    await app.evaluate(({ dialog }, file) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [file] }); }, target);
+    await page.locator('#openBtn').click(); await page.waitForFunction(() => document.querySelector('.tiptap .rich-image img')?.naturalWidth === 1200);
+    assert.equal(await doc.locator('tr').count(), 4); assert.ok((await doc.innerText()).includes('事项')); assert.equal(await doc.locator('img').first().evaluate(e => e.style.width), '350px');
+    assert.equal(await doc.locator('th').first().getAttribute('colwidth'), columnWidth);
+    await doc.locator('img').first().dblclick(); assert.equal(await page.locator('#lightbox').evaluate(e => e.open), true); await page.locator('#viewerPlus').click(); await page.keyboard.press('Escape');
+    await page.locator('#zoomPlus').click(); assert.equal(await page.locator('#zoomValue').textContent(), '110%'); await page.locator('#zoomValue').click();
+    const cdp = await page.context().newCDPSession(page); const box = await doc.boundingBox();
+    const data = { items: [], files: [path.join(root, 'assets/mountains.svg'), path.join(root, 'assets/mountains.svg')], dragOperationsMask: 1 };
+    for (const type of ['dragEnter', 'dragOver', 'drop']) await cdp.send('Input.dispatchDragEvent', { type, x: box.x + 100, y: Math.max(200, box.y + 100), data });
+    await page.waitForFunction(() => document.querySelectorAll('.tiptap .rich-image img').length === 3);
+    await doc.focus(); await page.keyboard.press('Control+z'); await page.waitForFunction(() => document.querySelectorAll('.tiptap .rich-image img').length === 1); await page.keyboard.press('Control+y'); await page.waitForFunction(() => document.querySelectorAll('.tiptap .rich-image img').length === 3);
+    await app.evaluate(({ clipboard, nativeImage }) => { const png = nativeImage.createFromBitmap(Buffer.from([80,120,90,255]), { width: 1, height: 1 }).toPNG(); clipboard.read = async () => [{ types: ['image/png'], getType: async () => new Blob([png], { type: 'image/png' }) }]; });
+    await doc.evaluate(el => { const data = new DataTransfer(); data.items.add(new File([new Uint8Array([1])], 'paste.png', { type: 'image/png' })); el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true })); });
+    await page.waitForFunction(() => [...document.querySelectorAll('.tiptap .rich-image img')].some(i => i.naturalWidth === 1));
+    await app.evaluate(({ dialog }) => { dialog.showMessageBox = async () => ({ response: 2 }); });
+    const before = await doc.innerHTML(); await page.locator('#newBtn').click(); assert.equal(await doc.innerHTML(), before);
+    await page.locator('#saveBtn').click(); await page.waitForFunction(() => document.querySelector('#saveState').textContent === '已保存');
+    await fs.writeFile(target, '# 外部修改'); await doc.press('Control+End'); await page.keyboard.type('修改');
+    await app.evaluate(({ dialog }) => { dialog.showMessageBox = async () => ({ response: 0 }); }); await page.locator('#saveBtn').click(); await page.waitForTimeout(150); assert.equal(await fs.readFile(target, 'utf8'), '# 外部修改');
+    await app.evaluate(({ dialog }, file) => { dialog.showMessageBox = async () => ({ response: 1 }); dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [file] }); }, path.join(root, '示例文档.md'));
+    await page.locator('#openBtn').click(); await page.waitForFunction(() => document.querySelector('#fileName').textContent === '示例文档.md');
+    await page.waitForFunction(() => document.querySelector('.tiptap .rich-image img')?.naturalWidth === 1200);
+    assert.equal(await doc.locator('li[data-type="taskItem"]').count(), 3);
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].showInactive());
+    await fs.mkdir(path.join(root, 'test-results'), { recursive: true }); await page.screenshot({ path: path.join(root, 'test-results/rich-editor.png') });
+    assert.deepEqual(errors, []);
+    console.log('PASS: single-page rich editing, formatting, table create/edit/rows/columns, Markdown roundtrip, image picker/resize/drop/paste/zoom, undo, unsaved cancel, external conflict, task lists.');
+  } finally { if (app) { await app.evaluate(({ app }) => { setTimeout(() => app.exit(0), 50); }).catch(() => {}); await app.close().catch(() => {}); } await fs.rm(temp, { recursive: true, force: true, maxRetries: 5, retryDelay: 250 }); }
+})().catch(e => { console.error(e); process.exitCode = 1; });
+
+
+

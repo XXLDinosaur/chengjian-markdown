@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' file: data: https: http:; connect-src 'none'; object-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>墨页 Markdown</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">墨</span><div>墨页 <span class="brand-en">MARKDOWN</span></div></div>
+    <div class="file-heading"><span id="fileName">未命名.md</span><span id="saveState" class="badge">未保存</span></div>
+    <div class="file-actions"><button id="newBtn" title="新建 Ctrl+N">新建</button><button id="openBtn" title="打开 Ctrl+O">打开文档</button><button id="saveAsBtn" title="另存为 Ctrl+Shift+S">另存为</button><button id="saveBtn" class="primary" title="保存 Ctrl+S">保存 <kbd>Ctrl S</kbd></button></div>
+  </header>
+  <div class="workspace">
+    <aside class="sidebar">
+      <div class="sidebar-title">文档大纲 <span id="headingCount">0</span></div>
+      <nav id="outline" aria-label="文档大纲"></nav>
+      <div class="sidebar-note"><span class="note-title">让阅读，舒适一点。</span><p>Ctrl + 滚轮缩放正文<br>点击图片调整尺寸<br>双击图片放大查看</p><div class="local-label"><span></span>本地文件 · 无需登录</div></div>
+    </aside>
+    <main>
+      <div class="toolbar">
+        <div class="format-actions"><button data-format="heading" title="标题">H₁</button><button data-format="bold" title="加粗 Ctrl+B"><b>B</b></button><button data-format="italic" title="斜体 Ctrl+I"><i>I</i></button><button data-format="code" title="代码">&lt;/&gt;</button><span class="divider"></span><button data-format="link" title="插入链接">链接</button><button id="imageBtn" title="插入本地图片；也可 Ctrl+V 粘贴截图">＋ 图片</button><button data-format="task" title="待办列表">☑</button></div>
+        <div class="view-actions"><div class="segmented" aria-label="视图"><button data-view="edit">编辑</button><button data-view="split" class="active">分栏</button><button data-view="read">阅读</button></div><button id="themeBtn" title="切换深浅主题" aria-label="切换深浅主题">◐</button></div>
+      </div>
+      <div id="panes" class="panes" data-view="split">
+        <section class="editor-pane">
+          <div class="pane-heading"><span><i class="dot"></i> MARKDOWN <small>源文本</small></span><div class="zoom-control"><button data-zoom="editor:-1" aria-label="缩小编辑区">−</button><button id="editorZoom" title="重置编辑区缩放">100%</button><button data-zoom="editor:1" aria-label="放大编辑区">＋</button></div></div>
+          <div class="editor-wrap"><textarea id="editor" aria-label="Markdown 编辑区" spellcheck="false"></textarea></div>
+        </section>
+        <div id="splitter" role="separator" aria-label="调整分栏宽度" aria-orientation="vertical" tabindex="0"></div>
+        <section class="preview-pane">
+          <div class="pane-heading"><span><i class="dot green"></i> PREVIEW <small>实时预览</small></span><div class="zoom-control"><button data-zoom="preview:-1" aria-label="缩小预览">−</button><button id="previewZoom" title="重置预览缩放">100%</button><button data-zoom="preview:1" aria-label="放大预览">＋</button></div></div>
+          <div id="previewScroll"><article id="preview" class="markdown-body"></article></div>
+        </section>
+      </div>
+      <div id="imageToolbar" class="image-toolbar" hidden><span>图片尺寸</span><button id="imageSmaller" title="图片缩小 10%">−</button><input id="imageWidth" type="number" min="24" max="8192" aria-label="图片宽度"><span>px</span><button id="imageLarger" title="图片放大 10%">＋</button><button id="imageNatural">原始大小</button><span class="divider"></span><button id="viewImage" class="primary">放大查看 ↗</button><button id="deselectImage" aria-label="关闭图片工具">×</button></div>
+      <footer><div><span class="status-dot"></span><span id="status">就绪</span></div><div><span id="wordCount">0 字</span><span id="cursorPosition">行 1，列 1</span><span>Markdown</span><span id="encodingLabel">UTF-8</span></div></footer>
+    </main>
+  </div>
+  <div id="toast" role="status" hidden></div>
+  <dialog id="lightbox"><div class="lightbox-header"><span id="imageName">图片预览</span><div><button id="viewerMinus" aria-label="缩小图片">−</button><button id="viewerPercent" title="原始大小">100%</button><button id="viewerPlus" aria-label="放大图片">＋</button><button id="viewerFit">适应窗口</button><button id="viewerOriginal">1:1 原图</button><button id="viewerClose" aria-label="关闭图片预览">×</button></div></div><div id="imageStage"><img id="largeImage" draggable="false" alt="图片预览"></div><div class="lightbox-hint">滚轮缩放 · 拖动平移 · Esc 关闭</div></dialog>
+  <script src="renderer.js"></script>
+</body>
+</html>

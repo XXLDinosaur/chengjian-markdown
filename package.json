@@ -1,0 +1,83 @@
+{
+  "name": "moye-markdown",
+  "version": "0.5.3",
+  "description": "成简 — 轻松写，直接编辑",
+  "author": "成简",
+  "license": "MIT",
+  "main": "src/main.cjs",
+  "scripts": {
+    "icon": "node scripts/build-icon.cjs",
+    "build": "node scripts/build.cjs",
+    "start": "npm run build && electron .",
+    "test": "node --test tests/core.test.mjs && node tests/rich-editor.cjs && node tests/custom-colors.cjs && node tests/shortcuts.cjs && node tests/outline.cjs && node tests/v4.cjs && node tests/v5.cjs && node tests/format-painter.cjs && node tests/recovery.cjs",
+    "pack": "npm run build && electron-builder --win dir --x64",
+    "installer": "npm run build && electron-builder --win nsis --x64 -c.directories.output=发行版/安装包/0.5.3"
+  },
+  "devDependencies": {
+    "@tiptap/core": "3.31.3",
+    "@tiptap/extension-highlight": "^3.31.3",
+    "@tiptap/extension-image": "3.31.3",
+    "@tiptap/extension-table": "3.31.3",
+    "@tiptap/extension-task-item": "3.31.3",
+    "@tiptap/extension-task-list": "3.31.3",
+    "@tiptap/starter-kit": "3.31.3",
+    "dompurify": "3.4.15",
+    "katex": "^0.18.7",
+    "marked": "18.0.13",
+    "remark-gfm": "4.0.1",
+    "remark-parse": "11.0.0",
+    "turndown": "7.2.4",
+    "turndown-plugin-gfm": "1.0.2",
+    "unified": "11.0.5",
+    "unist-util-visit": "5.0.0",
+    "electron": "44.4.3",
+    "electron-builder": "26.15.3",
+    "esbuild": "0.27.4",
+    "playwright": "1.63.0",
+    "sharp": "0.35.4"
+  },
+  "build": {
+    "appId": "local.moye.markdown",
+    "productName": "成简",
+    "directories": {
+      "output": "发行版/安装包/0.5.3"
+    },
+    "files": [
+      "src/main.cjs",
+      "src/preload.cjs",
+      "src/files.cjs",
+      "dist/**/*",
+      "assets/**/*",
+      "src/vector-image.cjs",
+      "src/vector-image.ps1"
+    ],
+    "win": {
+      "target": "dir",
+      "icon": "assets/app-icon.ico",
+      "signExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "成简",
+      "installerLanguages": [
+        "zh_CN"
+      ],
+      "language": "2052",
+      "artifactName": "成简-Setup-${version}-${arch}.${ext}",
+      "deleteAppDataOnUninstall": false
+    },
+    "asarUnpack": [
+      "src/vector-image.ps1"
+    ],
+    "electronLanguages": [
+      "zh-CN",
+      "zh-TW",
+      "en-US"
+    ],
+    "compression": "maximum"
+  }
+}

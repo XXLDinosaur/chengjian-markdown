@@ -1,0 +1,35 @@
+const { _electron: electron } = require('playwright');
+const path=require('path'),fs=require('fs/promises'),os=require('os'),assert=require('assert/strict');
+(async()=>{const root=path.resolve(__dirname,'..'),temp=await fs.mkdtemp(path.join(os.tmpdir(),'moye-workbench-'));let app;
+try{const env={...process.env,MOYE_TEST_PROFILE:temp};delete env.ELECTRON_RUN_AS_NODE;
+const packaged=process.argv.includes('--packaged');app=await electron.launch({executablePath:packaged?path.join(root,require('../package.json').build.directories.output,'win-unpacked/成简.exe'):require('electron'),args:packaged?[]:[root],env});
+const page=await app.firstWindow();page.setDefaultTimeout(12000);page.on('pageerror',e=>console.error('PAGE ERROR',e));await app.evaluate(({BrowserWindow})=>{BrowserWindow.getAllWindows()[0].setSize(1600,1000);BrowserWindow.getAllWindows()[0].showInactive();});
+await page.waitForSelector('.tiptap');await page.locator('#newBtn').click();const doc=page.locator('.tiptap');await doc.click();await page.keyboard.insertText('苹果 苹果 橙子');
+await page.waitForFunction(()=>document.querySelector('#saveState').textContent==='草稿已保存');assert.match((await fs.readFile(path.join(temp,'draft.json'),'utf8')),/苹果/);
+await page.locator('#fileName').dblclick();await page.locator('#renameText').fill('工作台测试.md');await page.locator('#renameApply').click();await page.waitForFunction(()=>document.querySelector('#fileName').textContent==='工作台测试.md');
+const file=path.join(temp,'工作台测试.md');await app.evaluate(({dialog},file)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:file});},file);await page.locator('#saveBtn').click();await page.waitForFunction(()=>document.querySelector('#saveState').textContent==='已保存');
+await page.locator('#replaceBtn').click();await page.locator('#findText').fill('苹果');assert.match(await page.locator('#findStatus').textContent(),/2 处/);await page.locator('#replaceText').fill('<梨>');await page.locator('#replaceAll').click();assert.equal(await doc.innerText(),'<梨> <梨> 橙子');await page.locator('[data-command=undo]').click();assert.match(await doc.innerText(),/苹果 苹果/);
+await page.locator('#tocTab').click();await doc.click();await page.keyboard.press('Control+a');await page.locator('#highlightBtn').click();await page.getByRole('button',{name:'黄色',exact:true}).click();assert.equal(await doc.locator('mark').count(),1);
+for(const style of ['chinese','chinese-paren','decimal','paren','circle','alpha']){await page.locator('#numberStyle').selectOption(style);assert.equal(await doc.locator('ol').getAttribute('data-numbering'),style);}
+await page.locator('#numberStyle').selectOption('chinese-paren');assert.equal(await doc.locator('ol').getAttribute('data-numbering'),'chinese-paren');
+await doc.click();await page.keyboard.press('Control+End');await page.locator('#formulaBtn').click();await page.locator('#formulaText').fill('\\frac{a}{b}+x^2');await page.locator('#formulaApply').click();assert.equal(await doc.locator('.formula').count(),1);await doc.locator('.formula').dblclick();await page.locator('#formulaText').fill('\\sqrt{x}');await page.locator('#formulaApply').click();assert.equal(await doc.locator('.formula').count(),1);
+await page.waitForFunction(()=>document.querySelector('#saveState').textContent==='已保存');let saved=await fs.readFile(file,'utf8');assert.match(saved,/data-latex/);assert.match(saved,/data-numbering="chinese-paren"/);assert.match(saved,/<mark/);
+await page.locator('#fileName').dblclick();await page.locator('#renameText').fill('已改名.md');await page.locator('#renameApply').click();await page.waitForFunction(()=>document.querySelector('#fileName').textContent==='已改名.md');assert.ok(await fs.stat(path.join(temp,'已改名.md')));
+await page.locator('#colorsBtn').click();await page.locator('#newScheme').click();await page.locator('#backgroundType').selectOption('gradient');await page.locator('#gradientEnd').fill('#aabbcc');assert.match(await page.locator('#themeBackdrop').evaluate(e=>e.style.backgroundImage),/linear-gradient/);await page.locator('#themeGlass').uncheck();await page.locator('#applyColors').click();await page.locator('#schemesDialog button.primary').click();
+const omml='<m:oMath><m:f><m:num><m:r><m:t>a</m:t></m:r></m:num><m:den><m:r><m:t>b</m:t></m:r></m:den></m:f></m:oMath>';const converted=await page.evaluate(x=>window.desktop.convertOMML(x),omml);assert.ok(!converted.error,converted.error);assert.match(converted.mathml,/mfrac/);
+await doc.click();await page.keyboard.press('Control+End');await page.evaluate(omml=>{const data=new DataTransfer();data.setData('text/html',omml);document.querySelector('.tiptap').dispatchEvent(new ClipboardEvent('paste',{clipboardData:data,bubbles:true,cancelable:true}));},omml);await page.waitForFunction(()=>document.querySelectorAll('.tiptap .formula').length===2);
+await page.waitForFunction(()=>document.querySelector('#saveState').textContent==='已保存');
+await app.evaluate(({dialog},file)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[file]});},path.join(temp,'已改名.md'));
+await page.locator('#openBtn').click();await page.waitForFunction(()=>document.querySelectorAll('.tiptap .formula').length===2);assert.equal(await doc.locator('mark').count(),1);assert.equal(await doc.locator('ol').getAttribute('data-numbering'),'chinese-paren');
+await page.locator('#floatBtn').click();assert.equal(await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].isAlwaysOnTop()),true);await page.screenshot({path:path.join(root,'test-results/floating-workbench.png')});await page.locator('#floatBtn').click();assert.equal(await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].isAlwaysOnTop()),false);
+await page.screenshot({path:path.join(root,'test-results/workbench.png')});
+await page.emulateMedia({media:'print'});assert.equal(await page.locator('#documentOutline').isVisible(),false);assert.equal(await page.locator('.topbar').isVisible(),false);await page.emulateMedia({media:'screen'});
+await app.evaluate(()=>{const fs=process.getBuiltinModule('fs').promises,original=fs.rename;fs.rename=async(...args)=>{global.slowSaving=true;await new Promise(r=>setTimeout(r,450));const result=await original(...args);global.slowSaving=false;return result;};});
+await doc.click();await page.keyboard.press('Control+End');await page.keyboard.insertText('连续输入一');
+for(let i=0;i<100;i++){if(await app.evaluate(()=>global.slowSaving))break;await new Promise(r=>setTimeout(r,30));}
+assert.equal(await doc.getAttribute('contenteditable'),'true');await page.keyboard.insertText('二');
+await page.waitForFunction(()=>document.querySelector('#saveState').textContent==='已保存');assert.match(await fs.readFile(path.join(temp,'已改名.md'),'utf8'),/连续输入一二/);
+console.log('PASS: draft and file autosave, rename, find/replace/undo, highlight, numbering, editable formulas and Word OMML paste, gradient theme, float restore, print layout.');
+}finally{if(app){await app.evaluate(({app})=>setTimeout(()=>app.exit(0),50)).catch(()=>{});await app.close().catch(()=>{});}await fs.rm(temp,{recursive:true,force:true,maxRetries:5,retryDelay:250});}})().catch(e=>{console.error(e);process.exitCode=1;});
+
+

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 600" width="1200" height="600">
+<defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#d6e5dd"/><stop offset="1" stop-color="#f3f0df"/></linearGradient><linearGradient id="hill" x2="0" y2="1"><stop stop-color="#527562"/><stop offset="1" stop-color="#284c3e"/></linearGradient></defs>
+<rect width="1200" height="600" fill="url(#sky)"/><circle cx="895" cy="142" r="62" fill="#faf6da"/>
+<path d="M0 390 180 150 315 310 465 130 760 390 940 210 1200 385V600H0Z" fill="#a9c0b1"/>
+<path d="m0 485 254-235 194 178 219-201 280 211 253-146v308H0Z" fill="#7c9d8a"/>
+<path d="M0 520Q250 365 470 470T890 455T1200 430V600H0Z" fill="url(#hill)"/>
+<path d="M720 480q-180 40-85 67t-28 53h135q55-50-22-68t69-58Z" fill="#d6e2d5" opacity=".65"/>
+<text x="58" y="78" fill="#3d6650" font-family="Segoe UI,sans-serif" font-size="15" letter-spacing="6">ROOM TO THINK</text>
+<text x="58" y="116" fill="#3d6650" font-family="Microsoft YaHei,sans-serif" font-size="22">给想法，留一点空间。</text>
+</svg>
