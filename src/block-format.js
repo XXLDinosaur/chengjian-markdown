@@ -1,4 +1,17 @@
+import { Extension } from '@tiptap/core';
+import { Plugin } from '@tiptap/pm/state';
+function mediaBlock(node){return node.type.name==='table'||(node.isTextblock&&!node.textContent.trim()&&Array.from(node.content.content).some(n=>n.type.name==='image'));}
+// Media-only list items belong to the preceding item. Replace only changed lists,
+// preserving transaction mapping, history and the rest of the document.
+export const ListMedia=Extension.create({name:'listMedia',addProseMirrorPlugins(){return [new Plugin({appendTransaction(transactions,old,state){if(!transactions.some(t=>t.docChanged))return;const edits=[];state.doc.descendants((node,pos)=>{if(!['orderedList','bulletList'].includes(node.type.name))return;const items=[];let changed=false;node.forEach(item=>{const parts=Array.from(item.content.content);if(items.length&&parts.every(n=>mediaBlock(n)||(n.isTextblock&&!n.content.size))&&parts.some(mediaBlock)){const prev=items.pop();items.push(prev.copy(prev.content.append(item.content)));changed=true;}else items.push(item);});if(changed){edits.push({pos,node,next:node.type.create(node.attrs,items)});return false;}});if(!edits.length)return;const tr=state.tr;for(const e of edits.reverse())tr.replaceWith(e.pos,e.pos+e.node.nodeSize,e.next);return tr;}})];}});
 export function applyList(editor, type, numbering='decimal', toggle=false) {
+ const selection=editor.state.selection,top=[];
+ editor.state.doc.forEach((node,pos)=>{if(pos<selection.to&&pos+node.nodeSize>selection.from)top.push({node,pos});});
+ if(top.some(x=>mediaBlock(x.node))&&top.every(x=>x.node.isTextblock||mediaBlock(x.node))){
+  const result=[],items=[];for(const {node} of top){if(mediaBlock(node)){if(items.length){const last=items.pop();items.push(last.copy(last.content.append(editor.schema.nodes.doc.create(null,[node]).content)));}else result.push(node);}else items.push(editor.schema.nodes.listItem.create(null,[node]));}
+  if(items.length)result.push(editor.schema.nodes[type].create(type==='orderedList'?{numbering}:null,items));
+  editor.view.dispatch(editor.state.tr.replaceWith(top[0].pos,top.at(-1).pos+top.at(-1).node.nodeSize,result));editor.view.focus();return;
+ }
  const headings=[];editor.state.doc.nodesBetween(editor.state.selection.from,editor.state.selection.to,(node,pos)=>{if(node.type.name==='heading')headings.push({pos:pos+1,attrs:{...node.attrs}});});
  const chain=editor.chain().focus();
  let selectedList=editor.isActive(type);const blocks=[];

@@ -38,3 +38,23 @@ test('atomic save preserves CRLF and UTF-16 BOM, including reopen', async () => 
     assert.deepEqual(await fs.readdir(temp), ['中文.md']);
   } finally { await fs.rm(temp, { recursive: true, force: true }); }
 });
+import { collectResources } from '../src/resources.cjs';
+import { relocateImages } from '../src/core.mjs';
+import { pathToFileURL } from 'node:url';
+
+test('saving collects external images once and leaves remote/code examples untouched', async () => {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), 'chengjian-resources-'));
+  try {
+    const file = path.join(temp,'external #100%.svg');
+    await fs.writeFile(file,'<svg/>');
+    const src=pathToFileURL(file).href;
+    const text=`<img src="${src}" width="300">\n\n<img src="${src}" width="450">\n\n![remote](https://example.com/a.png)\n\n\`![code](missing.png)\``;
+    let copies=0;
+    const result=await collectResources({text,sourceDocument:path.join(temp,'old.md'),targetDocument:path.join(temp,'new','copy.md'),stagedImages:new Map(),prepareMarkdown,relocateImages,writeImage:async(bytes)=>{copies++;assert.equal(bytes.toString(),'<svg/>');return {src:'copy.assets/image.svg'};}});
+    assert.equal(copies,1);
+    assert.match(result,/width="300"/);assert.match(result,/width="450"/);
+    assert.equal(prepareMarkdown(result).images.filter(i=>i.src==='copy.assets/image.svg').length,2);
+    assert.match(result,/https:\/\/example.com\/a.png/);assert.match(result,/`!\[code\]\(missing.png\)`/);
+    await assert.rejects(collectResources({text:'![missing](missing.png)',sourceDocument:path.join(temp,'old.md'),targetDocument:path.join(temp,'new','copy.md'),stagedImages:new Map(),prepareMarkdown,relocateImages,writeImage:async()=>{throw Error('should not write');}}),/文档未保存/);
+  } finally { await fs.rm(temp,{recursive:true,force:true}); }
+});

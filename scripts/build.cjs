@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 fs.mkdirSync('dist', { recursive: true });
 fs.copyFileSync('src/rich.html', 'dist/index.html');
-const css=['src/style.css', 'src/rich.css', 'src/glass.css'].map(file => fs.readFileSync(file, 'utf8')).join('\n');
+const css=['src/style.css', 'src/rich.css', 'src/glass.css', 'src/document-ui.css'].map(file => fs.readFileSync(file, 'utf8')).join('\n');
 fs.writeFileSync('dist/style.css',esbuild.transformSync(css,{loader:'css',minify:true}).code);
 const common={bundle:true,minify:true,metafile:true};
 const results=[

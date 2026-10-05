@@ -7,6 +7,7 @@ const { relocateImages, prepareMarkdown } = require('../dist/document.cjs');
 let imageStagingDirectory;
 const stagedImages = new Map();
 const {renderVector}=require('./vector-image.cjs');
+const { collectResources, encodePath } = require('./resources.cjs');
 if (process.env.MOYE_TEST_PROFILE) app.setPath('userData', process.env.MOYE_TEST_PROFILE);
 let win, documentState = null, dirty = false, closing = false, closePending = false;
 const filters = [{ name: 'Markdown 文档', extensions: ['md', 'markdown', 'mdown', 'txt'] }];
@@ -24,7 +25,7 @@ function register(name, handler) {
 }
 app.whenReady().then(() => {
   app.setAppUserModelId('local.moye.markdown');
-  win = new BrowserWindow({ width: 1440, height: 920, minWidth: 980, minHeight: 650, backgroundColor: '#f5f5f2', title: '成简', icon: path.join(__dirname, '../assets/app-icon.ico'), show: false, autoHideMenuBar: true,
+  win = new BrowserWindow({ frame:false, width: 1440, height: 920, minWidth: 980, minHeight: 650, backgroundColor: '#f5f5f2', title: '成简', icon: path.join(__dirname, '../assets/app-icon.ico'), show: false, autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true, spellcheck: false } });
   Menu.setApplicationMenu(null);
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
@@ -32,6 +33,13 @@ app.whenReady().then(() => {
   win.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => callback(false));
   win.on('close', event => { if (dirty && !closing) { event.preventDefault(); if (!closePending) { closePending = true; win.webContents.send('request-close'); } } });
   win.once('ready-to-show', () => { if (!process.env.MOYE_TEST_PROFILE) win.show(); });
+  register('window-control', action => {
+    if(action==='minimize')win.minimize();
+    else if(action==='maximize'){if(win.isMaximized())win.unmaximize();else win.maximize();}
+    else if(action==='close')win.close();
+    return {maximized:win.isMaximized()};
+  });
+  register('edit-command', command => {if(!['copy','paste','cut'].includes(command))throw Error('无效编辑操作');win.webContents[command]();return true;});
   register('initial', async () => {
     const file = process.argv.find(arg => /\.(md|markdown|mdown|txt)$/i.test(arg) && path.isAbsolute(arg));
     return file ? openFile(file) : null;
@@ -63,23 +71,8 @@ app.whenReady().then(() => {
         if (response !== 1) return null;
       }
     }
-    if (documentState && path.dirname(target) !== path.dirname(documentState.path)) {
-      text = relocateImages(text, src => {
-        if (/^[a-z][a-z0-9+.-]*:/i.test(src) || path.isAbsolute(src) || src.startsWith('#')) return src;
-        let decoded = src; try { decoded = decodeURIComponent(src); } catch {}
-        const absolute = path.resolve(path.dirname(documentState.path), decoded);
-        const relative = path.relative(path.dirname(target), absolute);
-        return path.isAbsolute(relative) ? pathToFileURL(absolute).href : relative.replace(/\\/g, '/');
-      });
-    }
-    const imported = new Map();
-    for (const image of prepareMarkdown(text).images) {
-      if (!stagedImages.has(image.src) || imported.has(image.src)) continue;
-      const staged = stagedImages.get(image.src);
-      const result = await writeImage(await fs.readFile(staged.path), staged.name, target);
-      imported.set(image.src, result.src);
-    }
-    if (imported.size) text = relocateImages(text, src => imported.get(src) || src);
+    text = await collectResources({ text, sourceDocument: documentState?.path, targetDocument: target,
+      stagedImages, prepareMarkdown, relocateImages, writeImage });
     const format = documentState || { encoding: 'utf8', bom: false, eol: '\n' };
     const digest = await atomicSave(target, text, format);
     documentState = { ...format, path: target, text, hash: digest };
@@ -101,11 +94,11 @@ app.whenReady().then(() => {
     await fs.copyFile(documentState.path,target,require('node:fs').constants.COPYFILE_EXCL);
     await fs.unlink(documentState.path);documentState.path=target;return state();
   });
-  let normalBounds, wasMaximized;
+  let normalBounds, wasMaximized, floating = false;
   register('float-window', enabled => {
-    if(enabled && !win.isAlwaysOnTop()){wasMaximized=win.isMaximized();normalBounds=win.getNormalBounds();if(wasMaximized)win.unmaximize();win.setMinimumSize(380,360);win.setAlwaysOnTop(true);win.setSize(520,650);}
-    else if(!enabled && win.isAlwaysOnTop()){win.setAlwaysOnTop(false);win.setMinimumSize(980,650);if(normalBounds)win.setBounds(normalBounds);if(wasMaximized)win.maximize();}
-    return win.isAlwaysOnTop();
+    if(enabled && !floating){wasMaximized=win.isMaximized();normalBounds=win.getNormalBounds();if(wasMaximized)win.unmaximize();win.setMinimumSize(380,360);win.setAlwaysOnTop(true);win.setSize(520,650);}
+    else if(!enabled && floating){win.setAlwaysOnTop(false);win.setMinimumSize(980,650);if(normalBounds)win.setBounds(normalBounds);if(wasMaximized)win.maximize();}
+    floating = Boolean(enabled); return floating;
   });
   register('print-document', () => new Promise(resolve=>win.webContents.print({silent:false,printBackground:true},(success,reason)=>resolve({success,reason}))));
   register('theme-image', async () => {
@@ -177,7 +170,7 @@ app.whenReady().then(() => {
       stagedImages.set(src, { path: path.join(folder, uniqueName), name });
       return { src, name: path.basename(name, ext) };
     }
-    return { src: `${folderName}/${uniqueName}`, name: path.basename(name, ext) };
+    return { src: `${encodePath(folderName)}/${encodePath(uniqueName)}`, name: path.basename(name, ext) };
   }
   async function importImage(file) { return writeImage(await fs.readFile(file), path.basename(file)); }
   register('resolve-images', sources => {

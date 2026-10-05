@@ -1,8 +1,8 @@
 # 成简
 
-成简 0.5.3 是面向 Windows 的本地 Markdown 编辑器：像编辑普通文档一样直接修改内容，同时将文档保存为 Markdown。无需账号或服务端，支持图片缩放、表格、标题目录、编号、格式刷、主题和浮窗。
+成简（基于 0.5.3 的开发版）是面向 Windows 的本地 Markdown 编辑器：像编辑普通文档一样直接修改内容，同时将文档保存为 Markdown。无需账号或服务端，支持图片缩放、表格、标题目录、编号、格式刷、主题和浮窗。
 
-本仓库为原版 **成简** 的源码快照，不是后续的“简成笔记”，也不是轻量版。历史工程名 `moye-markdown` 和部分 `moye` 标识保留，以保持原有行为。
+本仓库维护原版 **成简** 的源码，不是后续的“简成笔记”，也不是轻量版。历史工程名 `moye-markdown` 和部分 `moye` 标识保留，以保持原有行为。
 
 ## 技术架构
 
@@ -58,3 +58,20 @@ npm run installer   # Windows x64 NSIS 安装包
 仅包含源码、测试、图标、示例和开发文档。`.gitignore` 排除本地配置、环境变量、密钥/证书、依赖、日志、测试产物和发行文件。提交前仍需检查实际暂存内容；忽略规则不能清除已提交的秘密。
 
 保留项目原有 [MIT 许可证](LICENSE)。第三方依赖采用各自许可证；构建时生成第三方许可说明。
+
+## 当前开发版
+
+参考简成笔记升级单文档界面，不包含仓库或标签页。新增界面模块 `src/document-ui.js` / `src/document-ui.css`，`src/resources.cjs` 负责便携图片收集。文档空段落及复杂表格用 HTML 保留；另存为复制本地资源。新增 `tests/roundtrip.cjs` 和 `tests/document-ui.cjs` 覆盖保存搬移与界面操作。
+
+### 这轮更新的评审入口
+
+- `src/rich-editor.js`：空白段落的 HTML 保留、图片尺寸和复杂表格往返保存。
+- `src/resources.cjs`：另存为复制本地图片、相对路径与特殊字符处理；缺失资源中止保存。
+- `src/document-ui.js` / `src/document-ui.css`：单文档布局、文件菜单、右键链接、窗口拖动与浮窗。
+- `src/glass-selects.js`：顶层 Popover 定位、键盘操作和 input/change 同步，修复主题菜单导致弹窗横向滚动。
+- `src/custom-colors.js`：预设及自定义主题、独立链接颜色、RGB/HEX 输入。
+- `tests/roundtrip.cjs`、`tests/document-ui.cjs`、`tests/theme-menu.cjs`：新增的保存搬移、界面交互和主题菜单回归。
+
+当前仍是开发版，package.json 保留 0.5.3 版本号；本次没有发布新安装包。主界面“文件”菜单内包含新建、打开、保存、另存为、打印、帮助及自动保存开关。
+
+测试说明：`v4.cjs` / `v5.cjs` 沿用了本地 Word 粘贴测试资源，依赖 `test-results/native-word.files/image001.png` 和 `test-results/formula-vector.emf`，这些生成资源不提交。矢量夹具生成器为 `tests/vector-fixture.ps1`。全新检出未准备夹具时，可先执行 `node --test tests/core.test.mjs`、`node tests/roundtrip.cjs`、`node tests/document-ui.cjs` 和 `node tests/theme-menu.cjs`；界面测试前需 `npm run build`。

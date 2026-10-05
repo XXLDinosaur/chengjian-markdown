@@ -5,7 +5,7 @@ export function installShortcuts({ blocked, setBlock }) {
     ['#findBtn','查找','Ctrl+F','KeyF'], ['#replaceBtn','替换','Ctrl+H','KeyH'], ['#printBtn','打印','Ctrl+P','KeyP'],
     ['#brushBtn','格式刷','Ctrl+Shift+C','KeyC',true],
 
-    ['#outlineBtn', '显示 / 收起目录', 'Ctrl+Shift+O', 'KeyO', true],
+    ['#outlineBtn', '显示 / 收起导航', 'Ctrl+Shift+O', 'KeyO', true],
     ['#newBtn', '新建文档', 'Ctrl+N', 'KeyN'], ['#openBtn', '打开文档', 'Ctrl+O', 'KeyO'],
     ['#saveBtn', '保存文档', 'Ctrl+S', 'KeyS'], ['#saveAsBtn', '另存为', 'Ctrl+Shift+S', 'KeyS', true],
     [command('undo'), '撤销', 'Ctrl+Z', 'KeyZ'], [command('redo'), '重做', 'Ctrl+Y', 'KeyY'],

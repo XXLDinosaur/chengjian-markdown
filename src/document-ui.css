@@ -1,0 +1,82 @@
+/* Single-document workbench: shared geometry, compact glass chrome. */
+body.rich-mode{--ui-radius:10px;display:flex;flex-direction:column;height:100vh;font-size:13px}
+body.rich-mode :is(.topbar,.rich-toolbar,#documentOutline,#editor,dialog,.tool-popover,.image-toolbar,.table-tools,.glass-context-menu,.glass-select-menu,.scheme-option,.color-row,.badge,button,input,select){border-radius:var(--ui-radius)}
+body.rich-mode .topbar{height:44px;min-height:44px;margin:8px 12px;padding:5px 10px;gap:8px;-webkit-app-region:drag}
+body.rich-mode .topbar :is(button,input,label,.file-heading){-webkit-app-region:no-drag}
+body.rich-mode .brand{width:30px;min-width:30px;gap:0}.brand-mark,.brand img{width:28px!important;height:28px!important}
+body.rich-mode .rich-main{height:auto;flex:1;min-height:0}
+body.rich-mode .rich-toolbar{min-height:44px;margin:0 12px 10px;padding:5px 8px;gap:6px}
+body.rich-mode :is(.format-actions,.view-actions,.file-actions,.history-actions){gap:3px;align-items:center}
+body.rich-mode :is(.topbar,.rich-toolbar) button{font-family:inherit;font-size:13px;font-weight:500;line-height:20px;min-height:30px;padding:4px 7px}
+body.rich-mode .file-heading{display:flex;align-items:center;gap:8px;margin-left:12px;min-width:0;font-size:12px}
+#fileName{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:500}
+#fileName[hidden]{display:none!important}
+#appMotto{font-size:14px!important;max-width:200px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#appMotto[hidden]{display:none}#mottoInput{width:180px;height:30px;background:var(--glass);color:var(--text);border:1px solid var(--accent)}
+body.rich-mode #floatBtn{margin-left:auto}
+body.rich-mode .window-controls{display:flex;gap:2px}
+body.rich-mode .window-controls button{width:30px;height:30px;padding:7px;display:inline-flex;align-items:center;justify-content:center}
+#windowClose:hover{background:#bb4141;color:white}
+body.rich-mode .ui-icon{display:inline-block;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;vertical-align:-3px}
+button:has(.ui-icon){display:inline-flex;align-items:center;justify-content:center;gap:5px}
+body.rich-mode .history-actions{display:flex;margin-left:4px;padding-left:6px;border-left:1px solid var(--line)}
+body.rich-mode .history-actions button{width:30px;padding:6px;font-size:13px}
+body.rich-mode .history-actions button::before{content:none!important}
+body.rich-mode .format-actions>.divider:first-of-type,body.rich-mode .format-actions>.divider:nth-of-type(2){display:none}
+body.rich-mode #findBtn,body.rich-mode #replaceBtn,body.rich-mode #linkBtn{display:none}
+body.rich-mode .document-workspace{gap:12px;margin:0 12px;min-height:0}
+body.rich-mode #documentOutline{flex:0 0 225px;min-width:0;width:225px;padding:12px;margin:0;border-radius:var(--ui-radius);font-size:13px}
+body.rich-mode #documentOutline[hidden]{display:none}
+body.rich-mode .outline-heading{margin:0 0 12px;font-size:13px}body.rich-mode .nav-tabs{gap:4px;padding:3px}
+body.rich-mode .nav-tabs button,body.rich-mode .outline-item{font-size:13px;font-weight:500}
+body.rich-mode #documentScroll{padding:0 12px 24px;overflow:auto;min-width:0;scrollbar-gutter:stable}
+body.rich-mode #editor{width:900px;max-width:none;margin:0 auto;min-height:650px;border-radius:var(--ui-radius)}
+body.rich-mode .page-bottom{font-size:12px;line-height:20px;text-align:center;margin:12px auto;color:var(--muted)}
+body.rich-mode footer.word-status{height:24px;min-height:24px;display:flex;justify-content:flex-end;align-items:center;margin:0 12px;padding:0;background:none;border:0;box-shadow:none;font-size:12px}
+body.rich-mode footer.word-status [hidden]{display:none!important}
+body.rich-mode .tiptap a,body.rich-mode .tiptap a:visited{color:var(--document-link,var(--accent))!important;text-decoration:underline}
+.glass-context-menu,.glass-select-menu{position:fixed;z-index:1500;min-width:190px;padding:6px;border:1px solid var(--glass-edge);background:color-mix(in srgb,var(--panel) 92%,transparent);backdrop-filter:blur(24px) saturate(140%);box-shadow:0 12px 36px #0003;color:var(--text);max-height:calc(100vh - 20px);overflow:auto}
+.glass-context-menu[hidden],.glass-select-menu[hidden]{display:none!important}
+.glass-context-menu button,.glass-select-menu button{display:flex;width:100%;justify-content:space-between;text-align:left;padding:7px 10px;min-height:32px;font-family:inherit;font-size:13px;font-weight:500;line-height:20px;color:inherit}
+.glass-context-menu kbd{margin-left:24px;font-size:11px;opacity:.65}
+.glass-context-menu button:hover,.glass-select-menu button:hover,.glass-select-menu [aria-selected=true]{background:var(--accent-soft)}
+.glass-select-original{position:absolute!important;width:1px!important;height:1px!important;opacity:0;pointer-events:none;padding:0!important;border:0!important}
+.glass-select-button{border:1px solid var(--glass-edge);background:var(--glass);min-width:92px;text-align:left}
+body.rich-mode dialog{max-height:calc(100vh - 24px);overflow:auto;background:color-mix(in srgb,var(--panel) 94%,transparent);backdrop-filter:blur(28px);border:1px solid var(--glass-edge);color:var(--text)}
+body.rich-mode .colors-dialog .color-row{display:grid;grid-template-columns:minmax(90px,1fr) 36px minmax(150px,1.3fr);gap:10px;align-items:center}
+body.rich-mode .colors-dialog .color-row input[type=color]{width:36px;height:36px;padding:2px}
+.color-values{display:grid;gap:4px;min-width:0}.colors-dialog .color-values input{box-sizing:border-box;width:100%;height:28px;padding:3px 8px;margin:0;font:12px Consolas,monospace}
+.color-values input[aria-invalid=true]{border-color:#c45d53!important}
+body.rich-mode :is(.topbar,.rich-toolbar,.table-tools,.image-toolbar,#documentOutline,.glass-context-menu,.glass-select-menu,.tool-popover,footer){user-select:none;-webkit-user-select:none}
+body.rich-mode :is(.tiptap,.tiptap *,input,textarea,[contenteditable=true]){user-select:text;-webkit-user-select:text}
+#floatDragHandle,#floatEmptyState{display:none}
+body.rich-mode.floating .topbar,body.rich-mode.floating #documentOutline,body.rich-mode.floating footer{display:none!important}
+body.rich-mode.floating .rich-toolbar{margin:6px 8px;padding:5px;align-items:flex-start;-webkit-app-region:drag}
+body.rich-mode.floating .rich-toolbar :is(.format-actions,.view-actions,button,input,select,label){-webkit-app-region:no-drag}
+body.rich-mode.floating #floatDragHandle{display:flex;align-items:center;justify-content:center;width:24px;height:30px;flex:0 0 24px;cursor:move;-webkit-app-region:drag}
+body.rich-mode.floating #outlineBtn,body.rich-mode.floating #imageBtn,body.rich-mode.floating .view-actions{display:none!important}
+body.rich-mode.floating #restoreWindowBtn{display:inline-flex!important;flex-shrink:0}
+body.rich-mode.floating .document-workspace{margin:0 8px}body.rich-mode.floating #documentScroll{padding:0 0 8px}
+body.rich-mode.floating #editor{width:100%;min-width:0;zoom:1!important}body.rich-mode.floating .tiptap{padding:20px;min-height:350px}body.rich-mode.floating .page-bottom{display:none}
+#helpDialog{width:min(600px,calc(100vw - 28px));font-size:14px;line-height:1.8}#helpDialog h3{margin:18px 0 6px}
+@media(max-width:1150px){body.rich-mode .file-heading .badge{display:none}#appMotto{max-width:110px}#fileName{max-width:140px}body.rich-mode #documentOutline{flex-basis:190px}}
+@media print{body.rich-mode :is(.topbar,.rich-toolbar,#documentOutline,.page-bottom,.word-status){display:none!important}body.rich-mode #editor{width:100%!important;zoom:1!important;background:white!important;box-shadow:none!important}}
+/* The old flex:1 file-heading made the entire visual gap a no-drag region. */
+body.rich-mode .topbar #windowDragRegion{flex:1 1 auto;min-width:48px;align-self:stretch;-webkit-app-region:drag;user-select:none}
+body.rich-mode .topbar .file-heading{flex:0 1 auto;margin-left:0;max-width:240px}
+body.rich-mode .topbar #floatBtn{margin-left:0}
+body.rich-mode:not(.floating) .brand{min-width:30px;width:30px}
+body.rich-mode .topbar #fileName{font-weight:500;max-width:160px}
+body.rich-mode .topbar #appMotto{flex:0 1 auto}
+@media(max-width:1100px){body.rich-mode .topbar .file-heading{max-width:135px}body.rich-mode .topbar #fileName{max-width:125px}body.rich-mode .topbar #windowDragRegion{min-width:36px}}
+/* Popover top-layer defaults must not center the viewport-positioned menu. */
+.glass-select-menu[popover]{position:fixed;inset:auto;margin:0;max-width:calc(100vw - 16px)}
+.glass-select-menu[popover]::backdrop{background:transparent;backdrop-filter:none;pointer-events:none}
+/* Keep the upload action visibly button-shaped before hover. */
+body.rich-mode #uploadThemeImage{
+  background:var(--button-hover);
+  border:1px solid var(--glass-edge);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.27),0 2px 7px rgba(36,63,111,.045);
+  border-radius:var(--ui-radius);
+}
+body.rich-mode #uploadThemeImage:hover{background:var(--accent-soft)}

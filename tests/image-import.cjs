@@ -29,13 +29,13 @@ const path = require('node:path');
     await page.locator('#preview img').click(); await page.locator('#imageWidth').fill('360'); await page.locator('#imageWidth').press('Enter');
     await page.waitForFunction(() => document.querySelector('#preview img')?.getAttribute('width') === '360');
     await app.evaluate(({ dialog }, file) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath: file }); }, target);
-    await page.locator('#saveBtn').click();
+    await page.locator('#fileMenuBtn').click(); await page.locator('#saveBtn').click();
     await page.waitForFunction(() => document.querySelector('#saveState').textContent === '已保存');
     const saved = await fs.readFile(target, 'utf8');
     assert.ok(saved.includes('新笔记.assets/')); assert.ok(saved.includes('width="360"')); assert.ok(!saved.includes('file:///'));
     assert.equal((await fs.readdir(path.join(temp, '新笔记.assets'))).length, 1);
     await app.evaluate(({ dialog }, file) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [file] }); }, target);
-    await page.locator('#openBtn').click();
+    await page.locator('#fileMenuBtn').click(); await page.locator('#openBtn').click();
     await page.waitForFunction(() => document.querySelector('#preview img')?.naturalWidth === 1200 && document.querySelector('#preview img')?.getAttribute('width') === '360');
     await app.evaluate(({ clipboard, nativeImage }) => {
       const png = nativeImage.createFromBitmap(Buffer.from([80, 120, 90, 255]), { width: 1, height: 1 }).toPNG();

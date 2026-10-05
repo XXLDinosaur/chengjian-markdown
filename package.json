@@ -9,7 +9,7 @@
     "icon": "node scripts/build-icon.cjs",
     "build": "node scripts/build.cjs",
     "start": "npm run build && electron .",
-    "test": "node --test tests/core.test.mjs && node tests/rich-editor.cjs && node tests/custom-colors.cjs && node tests/shortcuts.cjs && node tests/outline.cjs && node tests/v4.cjs && node tests/v5.cjs && node tests/format-painter.cjs && node tests/recovery.cjs",
+    "test": "node --test tests/core.test.mjs && node tests/rich-editor.cjs && node tests/custom-colors.cjs && node tests/shortcuts.cjs && node tests/outline.cjs && node tests/v4.cjs && node tests/v5.cjs && node tests/format-painter.cjs && node tests/recovery.cjs && node tests/roundtrip.cjs && node tests/document-ui.cjs && node tests/theme-menu.cjs",
     "pack": "npm run build && electron-builder --win dir --x64",
     "installer": "npm run build && electron-builder --win nsis --x64 -c.directories.output=发行版/安装包/0.5.3"
   },
@@ -49,7 +49,8 @@
       "dist/**/*",
       "assets/**/*",
       "src/vector-image.cjs",
-      "src/vector-image.ps1"
+      "src/vector-image.ps1",
+      "src/resources.cjs"
     ],
     "win": {
       "target": "dir",

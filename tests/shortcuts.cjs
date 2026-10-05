@@ -12,7 +12,7 @@ const os = require('node:os');
     const page = await app.firstWindow(); page.setDefaultTimeout(10000);
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].showInactive());
     const press = async key => { await page.keyboard.press(key); await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))); };
-    await page.waitForSelector('.tiptap'); await page.locator('#autoSave').uncheck(); await press('Control+n'); await page.waitForFunction(()=>document.querySelector('.tiptap').textContent==='');
+    await page.waitForSelector('.tiptap'); await page.locator('#fileMenuBtn').click(); await page.locator('#autoSave').uncheck(); await page.locator('#fileMenuBtn').click(); await press('Control+n'); await page.waitForFunction(()=>document.querySelector('.tiptap').textContent==='');
     const doc = page.locator('.tiptap'); await doc.click(); await page.keyboard.insertText('快捷键测试'); await press('Control+a');
     for (const [key, tag] of [['Control+b','strong'],['Control+i','em'],['Control+Shift+x','s']]) { await press(key); assert.equal(await doc.locator(tag).count(), 1); await press(key); assert.equal(await doc.locator(tag).count(), 0); }
     await press('Control+Home');
@@ -28,7 +28,7 @@ const os = require('node:os');
     await doc.focus(); await press('Control+End'); await press('Control+Shift+i'); await page.waitForFunction(() => document.querySelector('.tiptap .rich-image img')?.naturalWidth === 1200); assert.equal(await app.evaluate(() => global.imageCalls), 1);
     await doc.focus(); await press('Control+Shift+s'); await page.waitForFunction(() => document.querySelector('#saveState').textContent === '已保存'); assert.equal(await app.evaluate(() => global.saveCalls), 1); assert.equal(await doc.locator('s').count(), 0);
     await doc.focus(); await press('Control+Equal'); assert.equal(await page.locator('#zoomValue').textContent(), '110%'); await press('Control+Minus'); assert.equal(await page.locator('#zoomValue').textContent(), '100%');
-    for (const selector of ['[data-command="bold"]','[data-command="strike"]','#imageBtn','#tableBtn','#blockType']) { await page.locator(selector).hover(); await page.waitForFunction(() => !document.querySelector('#shortcutTip').hidden); assert.ok((await page.locator('#shortcutTip').innerText()).includes('Ctrl+')); }
+    for (const selector of ['[data-command="bold"]','[data-command="strike"]','#imageBtn','#tableBtn','#blockType + .glass-select-button']) { await page.locator(selector).hover(); await page.waitForFunction(() => !document.querySelector('#shortcutTip').hidden); assert.ok((await page.locator('#shortcutTip').innerText()).includes('Ctrl+')); }
     await page.locator('#tableBtn').hover(); await page.waitForFunction(() => document.querySelector('#shortcutTip').textContent.includes('Ctrl+Alt+T'));
     await page.screenshot({ path: path.join(root,'test-results/shortcut-tooltip.png') });
     console.log('PASS: formatting/list/heading shortcuts, single undo/redo, dialogs, modal isolation, image insertion, Save As without strike conflict, zoom, visible hover tooltips.');

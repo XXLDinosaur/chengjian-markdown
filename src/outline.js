@@ -3,7 +3,7 @@ const $ = id => document.getElementById(id);
 const panel = $('documentOutline'), list = $('outlineList'), scroll = $('documentScroll');
 let headings = [], buttons = [], frame = 0, rebuild = false;
 function toggle(show) {
-  panel.hidden = !show;
+  if(window.showSidebar)window.showSidebar(show?'navigation':'files');else panel.hidden = !show;
   $('outlineBtn').setAttribute('aria-expanded', String(show));
   $('outlineBtn').classList.toggle('active', show);
   localStorage.setItem('moye.outline.visible', String(show));
@@ -57,7 +57,17 @@ new MutationObserver(() => schedule(true)).observe($('editor'), { childList:true
 new ResizeObserver(() => schedule()).observe(scroll);
 scroll.addEventListener('scroll', () => schedule(), { passive:true });
 scroll.addEventListener('load', () => schedule(), true);
+
 toggle(localStorage.getItem('moye.outline.visible') !== 'false');
 // Initial empty state also needs a count when no headings have been added yet.
 $('outlineCount').textContent = '0';
 schedule(true);
+
+function followCaret(){
+ const selection=window.getSelection(),node=selection?.anchorNode;if(!node||!$('editor').contains(node))return;
+ update();let index=-1;for(let i=0;i<headings.length;i++){if(headings[i].contains(node)||headings[i]===node||Boolean(headings[i].compareDocumentPosition(node)&Node.DOCUMENT_POSITION_FOLLOWING))index=i;}
+ if(index<0)return;for(let i=0;i<buttons.length;i++){if(i===index)buttons[i].setAttribute('aria-current','location');else buttons[i].removeAttribute('aria-current');}
+ if(!panel.hidden&&!list.hidden){const r=buttons[index].getBoundingClientRect(),b=list.getBoundingClientRect();if(r.top<b.top||r.bottom>b.bottom)buttons[index].scrollIntoView({block:'nearest'});}
+}
+document.addEventListener('editor-caret',()=>requestAnimationFrame(followCaret));
+$('editor').addEventListener('click',()=>requestAnimationFrame(followCaret));

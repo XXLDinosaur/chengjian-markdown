@@ -10,8 +10,9 @@ import { gfm } from 'turndown-plugin-gfm';
 import { prepareMarkdown, escapeAttr, clamp } from './core.mjs';
 import { Numbering, TextHighlight, Formula } from './editor-features.js';
 import { HeadingListItem, WordStyles, WordText, normalizeWordHTML } from './word-format.js';
-import { applyList } from './block-format.js';
+import { applyList, ListMedia } from './block-format.js';
 import { installWorkbench } from './workbench.js';
+import { installDocumentUI, NoJump } from './document-ui.js';
 import { installShortcuts } from './shortcuts.js';
 
 const $ = id => document.getElementById(id), api = window.desktop;
@@ -24,8 +25,13 @@ function persist() { localStorage.setItem('moye.rich.preferences', JSON.stringif
 function toast(text) { $('toast').textContent = text; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').hidden = true, 4500); }
 async function checked(promise) { const result = await promise; if (result?.error) throw new Error(result.error); return result; }
 const welcome = '# 写作，就从这里开始\n\n直接点击这张纸，就可以像写普通文档一样输入、修改文字。\n\n## 把注意力留给内容\n\n选中文字，点击上方的 **加粗**、*斜体* 或标题样式。你看到的，就是正在编辑的内容。\n\n> 不需要记住任何 Markdown 语法。\n\n## 图片与表格，也很简单\n\n- 把图片直接拖进来，单击调整大小，双击放大查看。\n- 点击上方的“表格”，选择行列数，然后直接填写。\n- 按 Ctrl + 滚轮，把页面调到舒服的大小。\n\n按 **Ctrl + S**，把这份文档保存在你的电脑上。\n';
-const markdown = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced', bulletListMarker: '-' });
+const markdown = new TurndownService({ headingStyle: 'atx', codeBlockStyle: 'fenced', bulletListMarker: '-',
+  // Markdown blank separators have no paragraph semantics. Explicit HTML keeps
+  // intentionally empty editor paragraphs, including at the document edges.
+  blankReplacement: (_content, node) => node.nodeName === 'P' ? '\n\n<p></p>\n\n' : node.isBlock ? '\n\n' : ''
+});
 markdown.use(gfm);
+markdown.addRule('noJump',{filter:node=>node.hasAttribute?.('data-no-jump'),replacement:(_content,node)=>node.outerHTML});
 markdown.addRule('formula',{filter:node=>node.nodeName==='SPAN' && node.hasAttribute('data-formula'),replacement:(_c,node)=>node.outerHTML});
 markdown.addRule('wordFormatting',{filter:node=>node.hasAttribute?.('data-word-style') || (node.nodeName==='OL' && node.querySelector('h1,h2,h3,h4,h5,h6')) || (node.nodeName==='UL' && node.querySelector('h1,h2,h3,h4,h5,h6')),replacement:(_c,node)=>['SPAN','IMG'].includes(node.nodeName)?node.outerHTML:'\n\n'+node.outerHTML+'\n\n'});
 markdown.addRule('highlight',{filter:'mark',replacement:(_c,node)=>node.outerHTML});
@@ -52,7 +58,7 @@ function scheduleAutoSave(){
   clearTimeout(autoTimer);if(!editor || !dirty() || !autoEnabled() || autoPaused || (!filePath && snapshot()===draftSnapshot))return;
   autoTimer=setTimeout(()=>{
     if(busy || autoPromise){scheduleAutoSave();return;}
-    autoPromise=(async()=>{try{if(filePath)await save(false,true);else{const captured=snapshot();await checked(api.draftWrite({name:$('fileName').textContent,text:serialize()}));draftSnapshot=captured;refresh();}}catch(e){autoPaused=true;toast(e.message);}finally{autoPromise=null;scheduleAutoSave();}})();
+    autoPromise=(async()=>{try{if(filePath)await save(false,true);else{const captured=snapshot();await checked(api.draftWrite({name:$('fileName').textContent,text:serialize()}));draftSnapshot=captured;refresh();}}catch(e){autoPaused=true;toast(e.message);refresh();}finally{autoPromise=null;scheduleAutoSave();}})();
   },900);
 }
 
@@ -60,6 +66,7 @@ function selectedImage() { const node = editor?.state.selection.node; return nod
 function refresh() {
   if (!editor) return;
   $('saveState').textContent = dirty() ? (!filePath && draftSnapshot===snapshot()?'草稿已保存':'未保存') : filePath ? '已保存' : '新文档';
+  $('autoSaveHint').textContent = autoPaused ? '保存未完成，请手动保存重试' : !autoEnabled() ? '自动保存已关闭' : !filePath ? (dirty() && draftSnapshot !== snapshot() ? '正在保存草稿…' : '草稿保存在本机 · 使用保存选择文档位置') : dirty() ? '正在实时保存…' : '所有内容已实时保存';
   $('wordCount').textContent = `${editor.getText().replace(/\s/g, '').length.toLocaleString()} 字`;
   $('status').textContent = filePath || '直接输入文字 · 可拖入图片'; $('status').title = filePath || '';
   api.dirty(dirty()); scheduleAutoSave(); document.dispatchEvent(new Event('document-updated'));
@@ -96,10 +103,10 @@ const RichImage = Image.extend({
 });
 function createEditor(content) {
   editor?.destroy();
-  editor = new Editor({ element: $('editor'), extensions: [Numbering, TextHighlight, Formula, HeadingListItem, WordStyles, WordText, StarterKit.configure({ listItem:false, link: { openOnClick: false } }), RichImage.configure({ allowBase64: true, inline:true }), TableKit.configure({ table: { resizable: true } }), TaskList, TaskItem.configure({ nested: true, HTMLAttributes: { 'data-type': 'taskItem' } })], content: htmlFromMarkdown(content), editorProps: { attributes: { 'aria-label': '文档编辑区', spellcheck: 'false' }, handlePaste: (_view, event) => {
+  editor = new Editor({ element: $('editor'), extensions: [ListMedia, NoJump, Numbering, TextHighlight, Formula, HeadingListItem, WordStyles, WordText, StarterKit.configure({ listItem:false, link: { openOnClick: false } }), RichImage.configure({ allowBase64: true, inline:true }), TableKit.configure({ table: { resizable: true } }), TaskList, TaskItem.configure({ nested: true, HTMLAttributes: { 'data-type': 'taskItem' } })], content: htmlFromMarkdown(content), editorProps: { attributes: { 'aria-label': '文档编辑区', spellcheck: 'false' }, handlePaste: (_view, event) => {
       const html=event.clipboardData?.getData('text/html') || '', plain=event.clipboardData?.getData('text/plain') || '';
       if (/mso-|<m:oMath|msEquation|<math\b/i.test(html)) {event.preventDefault();const from=editor.state.selection.from,to=editor.state.selection.to;locked(async()=>{const result=await checked(api.pasteWord({html,plain}));const normalized=normalizeWordHTML(result.html);editor.chain().insertContentAt({from,to},normalized).run();});return true;}
-      if ([...(event.clipboardData?.items || [])].some(item => item.type.startsWith('image/'))) { event.preventDefault(); importImages('paste'); return true; } return false; } }, onUpdate: refresh, onSelectionUpdate: refresh });
+      if ([...(event.clipboardData?.items || [])].some(item => item.type.startsWith('image/'))) { event.preventDefault(); importImages('paste'); return true; } return false; } }, onUpdate: refresh, onSelectionUpdate: () => { refresh(); document.dispatchEvent(new Event('editor-caret')); } });
 }
 function load(data) { clearTimeout(autoTimer);autoPaused=false;draftSnapshot=''; filePath = data.path; originalText = data.text; createEditor(data.text); savedDocument = snapshot(); $('fileName').textContent = data.name; $('encodingLabel').textContent = data.encoding === 'utf16le' ? 'UTF-16 LE' : 'UTF-8'; $('documentScroll').scrollTop = 0; refresh(); }
 async function locked(action) { if(autoPromise)await autoPromise; if (busy) return; busy = true; editor?.setEditable(false, false); document.querySelectorAll('.file-actions button').forEach(b => b.disabled = true); try { return await action(); } catch (e) { toast(e.message); } finally { busy = false; editor?.setEditable(true, false); document.querySelectorAll('.file-actions button').forEach(b => b.disabled = false); } }
@@ -122,7 +129,7 @@ $('newBtn').onclick = () => locked(async () => { if (await canLeave()) {await ch
 $('openBtn').onclick = () => locked(async () => { if (await canLeave()) { const data = await checked(api.open()); if (data) {await checked(api.draftWrite(null));load(data);} } });
 $('saveBtn').onclick = () => locked(() => save()); $('saveAsBtn').onclick = () => locked(() => save(true));
 const commands = { undo: 'undo', redo: 'redo', bold: 'toggleBold', italic: 'toggleItalic', strike: 'toggleStrike', bullet: 'toggleBulletList', ordered: 'toggleOrderedList', task: 'toggleTaskList', quote: 'toggleBlockquote', code: 'toggleCodeBlock' };
-document.querySelectorAll('[data-command]').forEach(button=>{button.onmousedown=e=>e.preventDefault();button.onclick=()=>{if(busy)return;if(button.dataset.command==='ordered')applyList(editor,'orderedList','decimal',true);else {const level=editor.isActive('heading')?editor.getAttributes('heading').level:null;editor.chain().focus()[commands[button.dataset.command]]().run();if(level && button.dataset.command==='bullet')editor.commands.setHeading({level});}refresh();};});
+document.querySelectorAll('[data-command]').forEach(button=>{button.onmousedown=e=>e.preventDefault();button.onclick=()=>{if(busy)return;if(button.dataset.command==='ordered')applyList(editor,'orderedList','decimal',true);else if(button.dataset.command==='bullet')applyList(editor,'bulletList','decimal',true);else {const level=editor.isActive('heading')?editor.getAttributes('heading').level:null;editor.chain().focus()[commands[button.dataset.command]]().run();if(level && button.dataset.command==='bullet')editor.commands.setHeading({level});}refresh();};});
 $('blockType').onchange = () => { if (busy) return; const level = Number($('blockType').value); if (level) editor.chain().focus().setHeading({ level }).run(); else editor.chain().focus().setParagraph().run(); refresh(); };
 $('tableBtn').onclick = () => { if (!busy) $('tableDialog').showModal(); };
 $('insertTable').onclick = () => { const rows = clamp(Number($('tableRows').value) || 3, 1, 50), cols = clamp(Number($('tableCols').value) || 3, 1, 20); $('tableDialog').close(); editor.chain().focus().insertTable({ rows, cols, withHeaderRow: $('tableHeader').checked }).run(); refresh(); };
@@ -181,3 +188,5 @@ import('./custom-colors.js');
 import('./outline.js');
 
 installWorkbench({getEditor:()=>editor, isBusy:()=>busy, toast, locked, save, rename:async name=>{if(filePath && dirty() && !(await save()))return false;const result=await checked(api.renameDocument(name));if(result.path)filePath=result.path;$('fileName').textContent=result.name;if(!filePath && autoEnabled())await checked(api.draftWrite({text:serialize(),name:result.name}));refresh();return true;}});
+
+installDocumentUI({getEditor:()=>editor,api,checked,locked,toast});

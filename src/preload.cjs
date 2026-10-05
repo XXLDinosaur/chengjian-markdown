@@ -1,5 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('desktop', {
+  windowControl:action=>ipcRenderer.invoke('window-control',action),
+  editCommand:command=>ipcRenderer.invoke('edit-command',command),
   pasteWord:data=>ipcRenderer.invoke('paste-word',data),
   draftRead:()=>ipcRenderer.invoke('draft-read'), draftWrite:data=>ipcRenderer.invoke('draft-write',data),
   renameDocument:name=>ipcRenderer.invoke('rename-document',name), floatWindow:enabled=>ipcRenderer.invoke('float-window',enabled),
