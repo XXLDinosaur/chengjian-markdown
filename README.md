@@ -1,5 +1,9 @@
 # 成简
 
+> **本轮已更新：功能提交 `812cf06`（2026-10-05）。** 版本号仍为 0.5.3，请按提交识别代码。
+>
+> **[先看更新前后对照与评审入口](UPDATE_REVIEW.md)** · **[查看实际代码差异](https://github.com/XXLDinosaur/chengjian-markdown/compare/229fa4391394bdaedea231aa8243c43bb4cef725...812cf063c6a1c1f0f6501378c52ad308bfdddcea)**
+
 成简（基于 0.5.3 的开发版）是面向 Windows 的本地 Markdown 编辑器：像编辑普通文档一样直接修改内容，同时将文档保存为 Markdown。无需账号或服务端，支持图片缩放、表格、标题目录、编号、格式刷、主题和浮窗。
 
 本仓库维护原版 **成简** 的源码，不是后续的“简成笔记”，也不是轻量版。历史工程名 `moye-markdown` 和部分 `moye` 标识保留，以保持原有行为。
